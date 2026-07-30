@@ -1,0 +1,33 @@
+name: cerberus-branch-check
+
+# Cerberus consumes a narrow subtree of prometheus/prometheus through this
+# fork. This workflow runs on every push to the long-lived `cerberus-parser`
+# branch and confirms the subtree still builds + tests pass after a rebase.
+#
+# The rest of the prometheus tree is irrelevant to cerberus; we deliberately
+# do not run the full upstream test matrix.
+
+on:
+  push:
+    branches:
+      - cerberus-parser
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  subtree-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+          cache: true
+      - name: Build cerberus subtrees
+        run: |
+          go build ./promql/parser/... ./model/labels/... ./model/histogram/...
+      - name: Test cerberus subtrees
+        run: |
+          go test -count=1 ./promql/parser/... ./model/labels/... ./model/histogram/...
